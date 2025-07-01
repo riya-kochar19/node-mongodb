@@ -13,19 +13,28 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v3
 
-      - name: Set .env based on branch
+      - name: Detect Branch and Set .env
         run: |
-          BRANCH="${GITHUB_REF##*/}"
-          if [[ "$BRANCH" == "master" ]]; then
+          # Fallback logic to handle both push and PR triggers
+          BRANCH_NAME="${GITHUB_HEAD_REF:-${GITHUB_REF##*/}}"
+          echo "🔁 Current Branch: $BRANCH_NAME"
+
+          if [[ "$BRANCH_NAME" == "master" ]]; then
             cp node-express-server/.env.uat node-express-server/.env
-          else
+            echo "✅ Copied .env.uat → .env"
+          elif [[ "$BRANCH_NAME" == "develop" ]]; then
             cp node-express-server/.env.dev node-express-server/.env
+            echo "✅ Copied .env.dev → .env"
+          else
+            echo "⚠️ Unsupported branch: $BRANCH_NAME"
+            exit 1
           fi
 
-      - name: Show picked environment variables
+      - name: Debug .env file
         run: |
-          echo "📦 Showing selected .env:"
-          cat node-express-server/.env 
+          echo "📁 node-express-server/.env contents:"
+          cat node-express-server/.env || echo "❌ .env not found"
 
       - name: Start Services
         run: docker compose up --build -d
+
