@@ -1,0 +1,26 @@
+name: Deploy Services
+
+on:
+  push:
+    branches:
+      - master
+      - develop
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Set .env based on branch
+        run: |
+          BRANCH="${GITHUB_REF##*/}"
+          if [[ "$BRANCH" == "master" ]]; then
+            cp node-express-server/.env.uat node-express-server/.env
+          else
+            cp node-express-server/.env.dev node-express-server/.env
+          fi
+
+      - name: Start Services
+        run: docker compose up --build -d
